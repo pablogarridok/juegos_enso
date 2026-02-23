@@ -1,0 +1,344 @@
+/* =========================
+   GO/NO-GO GAME STYLES
+   ========================= */
+
+/* =========================
+   START SCREEN
+   ========================= */
+.gonogo-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  min-height: 400px;
+}
+
+.stimulus-examples {
+  display: flex;
+  gap: var(--spacing-xl);
+  margin: var(--spacing-lg) 0;
+}
+
+.example-card {
+  background: var(--bg-elevated);
+  border: 3px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-width: 200px;
+  transition: all var(--transition-base);
+}
+
+.example-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-xl);
+}
+
+.example-card.go {
+  border-color: #10b981;
+}
+
+.example-card.nogo {
+  border-color: #ef4444;
+}
+
+.example-stimulus {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  color: white;
+  box-shadow: var(--shadow-lg);
+}
+
+.example-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.example-action {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* =========================
+   COUNTDOWN
+   ========================= */
+.gonogo-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: var(--spacing-lg);
+}
+
+.countdown-number {
+  font-size: 8rem;
+  font-weight: 800;
+  color: var(--primary);
+  font-family: var(--font-display);
+  animation: countdownPulse 1s ease-in-out;
+}
+
+.countdown-text {
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+@keyframes countdownPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* =========================
+   PLAYING SCREEN
+   ========================= */
+.gonogo-game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  height: 100%;
+}
+
+.game-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+  gap: var(--spacing-md);
+}
+
+.trial-indicator {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+}
+
+/* =========================
+   STIMULUS AREA
+   ========================= */
+.stimulus-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f9fafb;
+  border-radius: var(--radius-xl);
+  min-height: 400px;
+  position: relative;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: 3px solid transparent;
+}
+
+.stimulus-area:active {
+  transform: scale(0.98);
+}
+
+/* Feedback visual */
+.stimulus-area.feedback-active.correct {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
+  animation: feedbackFlash 0.3s ease-out;
+}
+
+.stimulus-area.feedback-active.commission {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  animation: feedbackFlash 0.3s ease-out;
+}
+
+.stimulus-area.feedback-active.omission {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: #f59e0b;
+  animation: feedbackFlash 0.3s ease-out;
+}
+
+@keyframes feedbackFlash {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* =========================
+   STIMULUS
+   ========================= */
+.stimulus {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6rem;
+  color: white;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  user-select: none;
+  transition: transform var(--transition-fast);
+}
+
+.stimulus:hover {
+  transform: scale(1.05);
+}
+
+@keyframes stimulusAppear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* =========================
+   FIXATION CROSS
+   ========================= */
+.fixation-cross {
+  font-size: 4rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  user-select: none;
+  opacity: 0.4;
+}
+
+/* =========================
+   RESPONSE HINT
+   ========================= */
+.response-hint {
+  text-align: center;
+  padding: var(--spacing-md);
+  background: linear-gradient(135deg, 
+    rgba(79, 70, 229, 0.05), 
+    rgba(6, 182, 212, 0.05)
+  );
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+}
+
+.response-hint p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.response-hint kbd {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--text-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.875rem;
+  margin: 0 0.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+   ========================= */
+@media (max-width: 768px) {
+  .stimulus-examples {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .example-card {
+    width: 100%;
+  }
+  
+  .stimulus {
+    width: 150px;
+    height: 150px;
+    font-size: 4rem;
+  }
+  
+  .example-stimulus {
+    width: 100px;
+    height: 100px;
+    font-size: 3rem;
+  }
+  
+  .countdown-number {
+    font-size: 6rem;
+  }
+  
+  .game-header-bar {
+    flex-direction: column;
+  }
+  
+  .stimulus-area {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stimulus {
+    width: 120px;
+    height: 120px;
+    font-size: 3rem;
+  }
+  
+  .fixation-cross {
+    font-size: 3rem;
+  }
+}
+
+/* =========================
+   ACCESSIBILITY
+   ========================= */
+@media (prefers-reduced-motion: reduce) {
+  .stimulus,
+  .countdown-number,
+  .example-card {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* =========================
+   KEYBOARD FOCUS
+   ========================= */
+.stimulus-area:focus {
+  outline: 3px solid var(--primary);
+  outline-offset: 4px;
+}

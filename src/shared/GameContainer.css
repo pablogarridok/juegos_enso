@@ -1,0 +1,103 @@
+/* =========================
+   GAME CONTAINER
+   ========================= */
+.game-container {
+  background: var(--bg-elevated);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp var(--transition-slow);
+}
+
+/* =========================
+   GAME HEADER
+   ========================= */
+.game-header {
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--border);
+}
+
+.game-title {
+  font-size: 2rem;
+  color: var(--primary);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+/* =========================
+   GAME INSTRUCTIONS
+   ========================= */
+.game-instructions {
+  background: linear-gradient(135deg, 
+    rgba(79, 70, 229, 0.05), 
+    rgba(6, 182, 212, 0.05)
+  );
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.game-instructions::before {
+  content: '💡';
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-lg);
+  transform: translateY(-50%);
+  font-size: 2rem;
+  opacity: 0.3;
+}
+
+.game-instructions p {
+  font-size: 1rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+  font-weight: 500;
+  max-width: 90%;
+}
+
+/* =========================
+   GAME CONTENT AREA
+   ========================= */
+.game-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+   ========================= */
+@media (max-width: 768px) {
+  .game-container {
+    padding: var(--spacing-lg);
+  }
+  
+  .game-title {
+    font-size: 1.5rem;
+  }
+  
+  .game-instructions {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .game-instructions::before {
+    display: none;
+  }
+  
+  .game-instructions p {
+    max-width: 100%;
+    font-size: 0.95rem;
+  }
+}

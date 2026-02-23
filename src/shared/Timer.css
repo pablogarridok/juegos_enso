@@ -1,0 +1,210 @@
+/* =========================
+   TIMER CONTAINER
+   ========================= */
+.timer-container {
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  min-width: 200px;
+  transition: all var(--transition-base);
+}
+
+.timer-container:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* =========================
+   TIMER LABEL
+   ========================= */
+.timer-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* =========================
+   TIMER DISPLAY
+   ========================= */
+.timer-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  font-family: var(--font-display);
+  transition: all var(--transition-base);
+}
+
+.timer-icon {
+  font-size: 1.5rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.timer-value {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  min-width: 3.5rem;
+  text-align: center;
+}
+
+/* =========================
+   TIMER PROGRESS BAR
+   ========================= */
+.timer-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timer-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width var(--transition-base), background var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.timer-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+/* =========================
+   ANIMATIONS
+   ========================= */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* =========================
+   TIMER STATES
+   ========================= */
+.timer-container.warning {
+  border-color: var(--warning);
+  animation: warningPulse 1s ease-in-out infinite;
+}
+
+.timer-container.danger {
+  border-color: var(--error);
+  animation: dangerShake 0.5s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: var(--shadow-md);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+  }
+}
+
+@keyframes dangerShake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+}
+
+/* =========================
+   RESPONSIVE DESIGN
+   ========================= */
+@media (max-width: 768px) {
+  .timer-container {
+    min-width: 150px;
+    padding: var(--spacing-sm);
+  }
+  
+  .timer-value {
+    font-size: 1.5rem;
+    min-width: 3rem;
+  }
+  
+  .timer-icon {
+    font-size: 1.25rem;
+  }
+  
+  .timer-progress-bar {
+    height: 6px;
+  }
+}
+
+/* =========================
+   COMPACT VARIANT
+   ========================= */
+.timer-container.compact {
+  padding: var(--spacing-sm);
+  min-width: unset;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.timer-container.compact .timer-label {
+  margin: 0;
+  font-size: 0.7rem;
+}
+
+.timer-container.compact .timer-display {
+  gap: 0.25rem;
+}
+
+.timer-container.compact .timer-value {
+  font-size: 1.25rem;
+  min-width: 2.5rem;
+}
+
+.timer-container.compact .timer-icon {
+  font-size: 1rem;
+}
+
+.timer-container.compact .timer-progress-bar {
+  flex: 1;
+  min-width: 60px;
+}

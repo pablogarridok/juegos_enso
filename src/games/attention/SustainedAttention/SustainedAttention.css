@@ -1,0 +1,284 @@
+/* ── SustainedAttention.css ──────────────────────────────────────────────── */
+
+/* ── Instrucciones ── */
+.sa-instructions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+  max-width: 520px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.sa-inst-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sa-inst-icon {
+  font-size: 2.8rem;
+}
+
+.sa-inst-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--color-text, #1e293b);
+}
+
+.sa-inst-desc {
+  font-size: 1.05rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.sa-target-preview {
+  display: inline-block;
+  background: #6366f1;
+  color: #fff;
+  padding: 0.1em 0.45em;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1.15em;
+}
+
+.sa-inst-examples {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sa-inst-ex {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.sa-letter-demo {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  font-size: 2.2rem;
+  font-weight: 800;
+  font-family: 'Courier New', monospace;
+}
+
+.sa-letter-demo.target {
+  background: #ede9fe;
+  color: #6366f1;
+  border: 2px solid #a5b4fc;
+}
+
+.sa-letter-demo.distractor {
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 2px dashed #cbd5e1;
+}
+
+.sa-inst-meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.sa-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.88rem;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+}
+
+.sa-start-btn {
+  margin-top: 0.5rem;
+  padding: 0.85rem 2.5rem;
+  background: #6366f1;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.12s;
+}
+
+.sa-start-btn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+}
+
+/* ── Countdown ── */
+.sa-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 340px;
+  gap: 1rem;
+}
+
+.sa-countdown-number {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #6366f1;
+  animation: sa-pulse 0.8s ease-in-out;
+}
+
+@keyframes sa-pulse {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.sa-countdown p {
+  font-size: 1.1rem;
+  color: #64748b;
+}
+
+/* ── Juego activo ── */
+.sa-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 1rem;
+}
+
+/* Barra de progreso */
+.sa-progress-bar {
+  width: 100%;
+  max-width: 480px;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sa-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #a855f7);
+  border-radius: 999px;
+  transition: width 1s linear;
+}
+
+.sa-timer-label {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Área del estímulo */
+.sa-stimulus-area {
+  width: 260px;
+  height: 260px;
+  border-radius: 20px;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  user-select: none;
+}
+
+.sa-stimulus-area:active {
+  transform: scale(0.97);
+}
+
+/* Feedback de respuesta */
+.sa-stimulus-area.feedback-hit {
+  background: #d1fae5;
+  border-color: #34d399;
+}
+
+.sa-stimulus-area.feedback-miss {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.sa-stimulus-area.feedback-false-alarm {
+  background: #fef3c7;
+  border-color: #fbbf24;
+}
+
+/* Letra estímulo */
+.sa-letter {
+  font-size: 6rem;
+  font-weight: 900;
+  font-family: 'Courier New', Courier, monospace;
+  color: #334155;
+  animation: sa-appear 0.12s ease-out;
+  line-height: 1;
+}
+
+.sa-letter.is-target {
+  color: #6366f1;
+}
+
+@keyframes sa-appear {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* Cruz de fijación */
+.sa-fixation {
+  font-size: 3rem;
+  color: #cbd5e1;
+  line-height: 1;
+}
+
+/* Pista inferior */
+.sa-hint {
+  font-size: 0.88rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.sa-target-inline {
+  background: #ede9fe;
+  color: #6366f1;
+  padding: 0.05em 0.35em;
+  border-radius: 5px;
+}
+
+.sa-hint kbd {
+  font-family: inherit;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  font-size: 0.85em;
+}
+
+/* ── Finalizado ── */
+.sa-finished {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 1rem;
+  color: #475569;
+}
+
+.sa-finished h2 {
+  font-size: 1.8rem;
+  color: #1e293b;
+}
