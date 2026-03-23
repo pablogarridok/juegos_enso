@@ -5,6 +5,7 @@ import { useGameState } from '../../../hooks/useGameState';
 import { useGameTimer } from '../../../hooks/useGameTimer';
 import type { GameProps, Word, WordRule, WordPool, GameResults } from '../../../types';
 import './WordsBox.css';
+import { WordsBoxResultSchema } from '../../../schemas/gameSchemas';
 
 const GAME_CONFIG = {
   totalRounds: 10,
@@ -131,25 +132,38 @@ export const WordsBox: React.FC<GameProps> = ({ onGameComplete }) => {
   };
 
   const finishGame = (): void => {
-    gameState.finishGame();
-    setGamePhase('finished');
-    timer.stopTimer();
-    
-    const avgResponseTime = gameState.results.reduce((acc, r) => acc + (r.responseTime || 0), 0) / gameState.results.length || 0;
-    
-    const results: GameResults = {
-      gameType: 'wordsbox',
-      summary: {
-        totalAnswers: gameState.results.length,
-        correctAnswers: gameState.getCorrectAnswers(),
-        accuracy: gameState.getAccuracy(),
-        averageResponseTime: avgResponseTime
-      },
-      detailedResults: gameState.results
-    };
-    
-    onGameComplete(results);
+  gameState.finishGame();
+  setGamePhase('finished');
+  timer.stopTimer();
+  
+  const avgResponseTime = gameState.results.reduce((acc, r) => acc + (r.responseTime || 0), 0) / gameState.results.length || 0;
+  
+  // 1. Preparamos el objeto como siempre
+  const rawResults = {
+    gameType: 'wordsbox',
+    summary: {
+      totalAnswers: gameState.results.length,
+      correctAnswers: gameState.getCorrectAnswers(),
+      accuracy: gameState.getAccuracy(),
+      averageResponseTime: avgResponseTime
+    },
+    detailedResults: gameState.results
   };
+
+  // 2. VALIDAMOS con Zod
+  const validation = WordsBoxResultSchema.safeParse(rawResults);
+
+  if (validation.success) {
+    // Si es válido, enviamos los datos limpios (validation.data)
+    onGameComplete(validation.data);
+  } else {
+    // Si falla, puedes ver qué campo dio error en la consola
+    console.error("Error de validación en los resultados:", validation.error.format());
+    
+    // Opcional: Manejar el error (ej: enviar un log de error a tu servidor)
+    // onGameComplete(rawResults); // Podrías enviarlos igual, pero ya sabes que están mal
+  }
+};
 
   return (
     <GameContainer

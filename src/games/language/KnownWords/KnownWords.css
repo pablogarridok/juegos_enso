@@ -1,0 +1,362 @@
+/* =========================
+   START SCREEN
+   ========================= */
+.kw-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  min-height: 400px;
+}
+
+.game-info {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.info-card {
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  min-width: 160px;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+}
+
+.info-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+}
+
+.info-icon  { font-size: 2.5rem; }
+
+.info-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+  text-align: center;
+}
+
+.info-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  font-family: var(--font-display);
+}
+
+.kw-tip {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  max-width: 480px;
+  text-align: center;
+}
+
+.start-game-button {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-2xl);
+  font-size: 1.25rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
+  letter-spacing: 0.02em;
+}
+
+.start-game-button:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-xl);
+}
+
+.start-game-button:active {
+  transform: translateY(-2px) scale(1);
+}
+
+/* =========================
+   GAME LAYOUT
+   ========================= */
+.kw-game {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* =========================
+   HEADER BAR
+   ========================= */
+.game-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+  gap: var(--spacing-md);
+}
+
+.round-indicator {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--border);
+}
+
+.kw-accepted-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.kw-accepted-icon {
+  font-size: 1rem;
+  color: var(--success, #22c55e);
+  font-weight: 700;
+}
+
+.kw-accepted-value {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  min-width: 20px;
+  text-align: center;
+}
+
+/* =========================
+   INSTRUCTION BAR
+   ========================= */
+.kw-instruction-bar {
+  text-align: center;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: linear-gradient(135deg,
+    rgba(79, 70, 229, 0.08),
+    rgba(6, 182, 212, 0.08)
+  );
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--primary);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.kw-instruction-bar strong {
+  color: var(--primary);
+}
+
+/* =========================
+   WORDS GRID
+   ========================= */
+.kw-words-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+}
+
+/* =========================
+   WORD CARD
+   ========================= */
+.kw-word-card {
+  position: relative;
+  background: var(--bg-elevated);
+  border: 2.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg) var(--spacing-md);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  box-shadow: var(--shadow-sm);
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+}
+
+.kw-word-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  opacity: 0;
+  transition: opacity var(--transition-base);
+  border-radius: inherit;
+}
+
+.kw-word-card:hover:not(:disabled) {
+  border-color: var(--primary-light);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+.kw-word-card:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* Accepted state */
+.kw-word-card.accepted {
+  border-color: var(--primary);
+  color: white;
+  cursor: default;
+  transform: scale(0.97);
+}
+
+.kw-word-card.accepted::after {
+  opacity: 1;
+}
+
+.kw-word-card.accepted:hover {
+  transform: scale(0.97);
+}
+
+.kw-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.75rem;
+  z-index: 2;
+  opacity: 0.85;
+}
+
+/* Flash feedback — correct accept */
+.kw-word-card.flash-correct {
+  animation: flashCorrect 0.4s ease;
+}
+
+@keyframes flashCorrect {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  40%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0.35); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+/* Flash feedback — wrong accept (false positive) */
+.kw-word-card.flash-wrong {
+  animation: flashWrong 0.4s ease;
+}
+
+@keyframes flashWrong {
+  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  40%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* =========================
+   CONTROLS
+   ========================= */
+.kw-controls {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--spacing-md);
+  border-top: 2px solid var(--border);
+}
+
+.kw-confirm-button {
+  background: linear-gradient(135deg, var(--success, #22c55e), #059669);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md) var(--spacing-2xl);
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-base);
+  letter-spacing: 0.01em;
+}
+
+.kw-confirm-button:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+.kw-confirm-button:active {
+  transform: translateY(-1px);
+}
+
+/* =========================
+   FINISHED
+   ========================= */
+.kw-finished {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  min-height: 300px;
+  text-align: center;
+}
+
+.kw-finished h2 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+}
+
+.kw-finished p {
+  color: var(--text-secondary);
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 768px) {
+  .game-info {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .info-card { width: 100%; }
+
+  .game-header-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .kw-words-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .kw-words-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+  }
+
+  .kw-word-card {
+    font-size: 1rem;
+    min-height: 60px;
+    padding: var(--spacing-md) var(--spacing-sm);
+  }
+}

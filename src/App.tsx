@@ -15,6 +15,9 @@ import { GoNoGo } from './games/attention/GoNoGo/Gonogo';
 import { SustainedAttention } from './games/attention/SustainedAttention/SustainedAttention';
 import { TowerOfHanoi } from './games/planning/TowerOfHanoi/TowerOfHanoi';
 import { ReverseSequence } from './games/memory/ReverseSequence/ReverseSequence';
+import { LogicalSequences } from './games/planning/LogicalSequences/LogicalSequences';
+import { TrailMaking } from './games/planning/TrailMaking/TrailMaking';
+import { KnownWords } from './games/language/KnownWords/KnownWords';
 
 // Catálogo de juegos organizados por categoría
 const GAMES_CATALOG: GamesCatalog = {
@@ -26,6 +29,13 @@ const GAMES_CATALOG: GamesCatalog = {
       component: WordsBox,
       description: 'Selecciona palabras según la regla',
       icon: '📚'
+    },
+    {
+      id: 'known-words',
+      name: 'Known Words',
+      component: KnownWords,
+      description: 'Selecciona palabras conocidas entre opciones',
+      icon: '🧠'
     }
   ],
   attention: [
@@ -51,6 +61,20 @@ const GAMES_CATALOG: GamesCatalog = {
       component: TowerOfHanoi,
       description: 'Evalúa planificación y control ejecutivo',
       icon: '🗼'
+    },
+    {
+      id: 'logical-sequences',
+      name: 'Logical Sequences',
+      component: LogicalSequences,
+      description: 'Identifica patrones lógicos en secuencias numéricas',
+      icon: '🔢'
+    },
+    {
+      id: 'trail-making',
+      name: 'Trail Making',
+      component: TrailMaking,
+      description: 'Evalúa flexibilidad cognitiva y atención visual',
+      icon: '🧩'
     }
   ],
   memory: [
