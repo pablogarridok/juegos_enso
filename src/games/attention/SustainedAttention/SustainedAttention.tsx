@@ -1,300 +1,222 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GameContainer } from '../../../shared/GameContainer';
 import { useGameState } from '../../../hooks/useGameState';
 import { useGameTimer } from '../../../hooks/useGameTimer';
-import type { GameProps, GameResults, GamePhase } from '../../../types';
 import './SustainedAttention.css';
 
-// ── Configuración del juego ─────────────────────────────────────────────────
-const GAME_CONFIG = {
-  totalDuration: 180,        // 3 minutos
-  stimulusOnDuration: 800,   // ms que aparece cada letra
-  interStimulusInterval: 1200, // ms entre estímulos
-  targetLetter: 'X',         // letra objetivo
-  targetRate: 0.15,          // 15 % de los estímulos son objetivo
-  blockSize: 20,             // estímulos por bloque (para analizar caídas)
-};
+const DURACION = 180;
+const TIEMPO_ESTIMULO = 800;
+const ENTRE_ESTIMULOS = 1200;
+const LETRA_OBJETIVO = 'X';
+const PROB_OBJETIVO = 0.15;
+const BLOQUE = 20;
 
-const LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWYZ'.split(''); // sin X
+const LETRAS = 'ABCDEFGHJKLMNOPQRSTUVWYZ'.split('');
 
-function randomLetter(): string {
-  return LETTERS[Math.floor(Math.random() * LETTERS.length)];
+function letraAleatoria() {
+  return LETRAS[Math.floor(Math.random() * LETRAS.length)];
 }
 
-// ── Tipos locales ───────────────────────────────────────────────────────────
-interface SATrial {
-  trialNumber: number;
-  letter: string;
-  isTarget: boolean;
-  responded: boolean;
-  responseTime: number | null;
-  correct: boolean;
-  errorType: 'omission' | 'commission' | null;
-  timestamp: number;
-  block: number;
-}
-
-interface BlockStats {
-  block: number;
-  hits: number;
-  omissions: number;
-  commissions: number;
-  avgRT: number | null;
-}
-
-// ── Componente principal ────────────────────────────────────────────────────
-export const SustainedAttention: React.FC<GameProps> = ({ onGameComplete }) => {
+export const SustainedAttention = ({ onGameComplete }) => {
   const gameState = useGameState();
+  const [fase, setFase] = useState('instructions');
+  const [cuenta, setCuenta] = useState(3);
+  const [letraActual, setLetraActual] = useState(null);
+  const [feedback, setFeedback] = useState(null);
 
-  const [gamePhase, setGamePhase] = useState<GamePhase>('instructions');
-  const [countdown, setCountdown] = useState(3);
-  const [currentLetter, setCurrentLetter] = useState<string | null>(null);
-  const [trialCount, setTrialCount] = useState(0);
-  const [feedbackType, setFeedbackType] = useState<'hit' | 'miss' | 'false-alarm' | null>(null);
+  const ensayosRef = useRef([]);
+  const ensayoActualRef = useRef(null);
+  const respondioRef = useRef(false);
+  const t1 = useRef(null);
+  const t2 = useRef(null);
+  const tCuenta = useRef(null);
 
-  // Datos detallados acumulados en ref para no perder estado en closures
-  const trialsRef = useRef<SATrial[]>([]);
-  const currentTrialRef = useRef<{ letter: string; isTarget: boolean; startTime: number } | null>(null);
-  const hasRespondedRef = useRef(false);
+  const timer = useGameTimer(() => terminar());
 
-  const stimulusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const nextTrialTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const progreso = DURACION > 0 ? ((DURACION - timer.timeLeft) / DURACION) * 100 : 0;
 
-  // ── Calcular estadísticas por bloques ─────────────────────────────────────
-  const computeBlockStats = (trials: SATrial[]): BlockStats[] => {
-    const blocks: BlockStats[] = [];
-    const totalBlocks = Math.ceil(trials.length / GAME_CONFIG.blockSize);
+  function mostrarFeedback(tipo) {
+    setFeedback(tipo);
+    setTimeout(() => setFeedback(null), 350);
+  }
 
-    for (let b = 0; b < totalBlocks; b++) {
-      const slice = trials.slice(b * GAME_CONFIG.blockSize, (b + 1) * GAME_CONFIG.blockSize);
-      const targets = slice.filter(t => t.isTarget);
-      const hits = targets.filter(t => t.correct).length;
-      const omissions = targets.filter(t => t.errorType === 'omission').length;
-      const commissions = slice.filter(t => t.errorType === 'commission').length;
-      const rts = slice.filter(t => t.responseTime !== null).map(t => t.responseTime as number);
-      const avgRT = rts.length > 0 ? rts.reduce((a, b) => a + b, 0) / rts.length : null;
+  function terminar() {
+    clearTimeout(t1.current);
+    clearTimeout(t2.current);
+    setFase('finished');
+    setLetraActual(null);
 
-      blocks.push({ block: b + 1, hits, omissions, commissions, avgRT });
-    }
-
-    return blocks;
-  };
-
-  // ── Finalizar juego ────────────────────────────────────────────────────────
-  const finishGame = useCallback(() => {
-    if (stimulusTimeoutRef.current) clearTimeout(stimulusTimeoutRef.current);
-    if (nextTrialTimeoutRef.current) clearTimeout(nextTrialTimeoutRef.current);
-
-    setGamePhase('finished');
-    setCurrentLetter(null);
-
-    const trials = trialsRef.current;
-    const targets = trials.filter(t => t.isTarget);
-    const hits = targets.filter(t => t.correct).length;
-    const omissions = targets.filter(t => t.errorType === 'omission').length;
-    const commissions = trials.filter(t => t.errorType === 'commission').length;
-    const rts = trials.filter(t => t.responseTime !== null).map(t => t.responseTime as number);
-    const avgRT = rts.length > 0 ? rts.reduce((a, b) => a + b, 0) / rts.length : 0;
-    const rtVariability = rts.length > 1
-      ? Math.sqrt(rts.reduce((sum, rt) => sum + Math.pow(rt - avgRT, 2), 0) / rts.length)
+    const ensayos = ensayosRef.current;
+    const objetivos = ensayos.filter(e => e.isTarget);
+    const aciertos = objetivos.filter(e => e.correct).length;
+    const omisiones = objetivos.filter(e => e.errorType === 'omission').length;
+    const comisiones = ensayos.filter(e => e.errorType === 'commission').length;
+    const rts = ensayos.filter(e => e.responseTime).map(e => e.responseTime);
+    const media = rts.length ? rts.reduce((a, b) => a + b, 0) / rts.length : 0;
+    const std = rts.length > 1
+      ? Math.sqrt(rts.reduce((s, r) => s + Math.pow(r - media, 2), 0) / rts.length)
       : 0;
 
-    const blockStats = computeBlockStats(trials);
+    // Estadísticas por bloques
+    const numBloques = Math.ceil(ensayos.length / BLOQUE);
+    const blockStats = Array.from({ length: numBloques }, (_, b) => {
+      const slice = ensayos.slice(b * BLOQUE, (b + 1) * BLOQUE);
+      const bRts = slice.filter(e => e.responseTime).map(e => e.responseTime);
+      return {
+        block: b + 1,
+        hits: slice.filter(e => e.isTarget && e.correct).length,
+        omissions: slice.filter(e => e.errorType === 'omission').length,
+        commissions: slice.filter(e => e.errorType === 'commission').length,
+        avgRT: bRts.length ? bRts.reduce((a, b) => a + b, 0) / bRts.length : null
+      };
+    });
 
-    const gameResults: GameResults = {
+    onGameComplete({
       gameType: 'sustained-attention',
       summary: {
-        totalAnswers: trials.length,
-        correctAnswers: hits,
-        incorrectAnswers: omissions + commissions,
-        accuracy: targets.length > 0 ? (hits / targets.length) * 100 : 0,
-        averageResponseTime: avgRT,
-        fastestResponse: rts.length > 0 ? Math.min(...rts) : 0,
-        slowestResponse: rts.length > 0 ? Math.max(...rts) : 0,
-        omissionErrors: omissions,
-        commissionErrors: commissions,
-        omissionRate: targets.length > 0 ? (omissions / targets.length) * 100 : 0,
-        commissionRate: (trials.length - targets.length) > 0
-          ? (commissions / (trials.length - targets.length)) * 100 : 0,
-        responseVariability: rtVariability,
-        // Bloques para caída de rendimiento
-        ...(blockStats as any),
-        blockStats,
+        totalAnswers: ensayos.length,
+        correctAnswers: aciertos,
+        incorrectAnswers: omisiones + comisiones,
+        accuracy: objetivos.length ? (aciertos / objetivos.length) * 100 : 0,
+        averageResponseTime: media,
+        fastestResponse: rts.length ? Math.min(...rts) : 0,
+        slowestResponse: rts.length ? Math.max(...rts) : 0,
+        omissionErrors: omisiones,
+        commissionErrors: comisiones,
+        omissionRate: objetivos.length ? (omisiones / objetivos.length) * 100 : 0,
+        commissionRate: (ensayos.length - objetivos.length) > 0
+          ? (comisiones / (ensayos.length - objetivos.length)) * 100 : 0,
+        responseVariability: std,
+        blockStats
       },
-      detailedResults: trials.map(t => ({
-        trialNumber: t.trialNumber,
-        stimulus: t.letter,
-        response: t.responded ? 'press' : null,
-        correct: t.correct,
-        responseTime: t.responseTime,
-        timestamp: t.timestamp,
-        stimulusType: t.isTarget ? 'TARGET' : 'DISTRACTOR',
-        errorType: t.errorType ?? undefined,
-        type: t.errorType ?? (t.correct ? (t.isTarget ? 'hit' : 'correct_rejection') : 'unknown'),
-        round: t.block,
-      })),
-    };
+      detailedResults: ensayos.map(e => ({
+        trialNumber: e.trialNumber,
+        stimulus: e.letter,
+        response: e.responded ? 'press' : null,
+        correct: e.correct,
+        responseTime: e.responseTime,
+        timestamp: e.timestamp,
+        stimulusType: e.isTarget ? 'TARGET' : 'DISTRACTOR',
+        errorType: e.errorType ?? undefined,
+        type: e.errorType ?? (e.correct ? (e.isTarget ? 'hit' : 'correct_rejection') : 'unknown'),
+        round: e.block
+      }))
+    });
+  }
 
-    onGameComplete(gameResults);
-  }, [onGameComplete]);
+  function siguienteEstimulo() {
+    const esObjetivo = Math.random() < PROB_OBJETIVO;
+    const letra = esObjetivo ? LETRA_OBJETIVO : letraAleatoria();
+    const inicio = Date.now();
+    const numero = ensayosRef.current.length + 1;
+    const bloque = Math.floor(ensayosRef.current.length / BLOQUE) + 1;
 
-  const handleGameTimeout = useCallback(() => {
-    finishGame();
-  }, [finishGame]);
+    respondioRef.current = false;
+    ensayoActualRef.current = { letra, esObjetivo, inicio };
 
-  const timer = useGameTimer(handleGameTimeout);
+    setLetraActual(letra);
 
-  // ── Mostrar siguiente estímulo ─────────────────────────────────────────────
-  const showNextStimulus = useCallback(() => {
-    const isTarget = Math.random() < GAME_CONFIG.targetRate;
-    const letter = isTarget ? GAME_CONFIG.targetLetter : randomLetter();
-    const startTime = Date.now();
-    const trialNumber = trialsRef.current.length + 1;
-    const block = Math.floor(trialsRef.current.length / GAME_CONFIG.blockSize) + 1;
+    t1.current = setTimeout(() => {
+      setLetraActual(null);
 
-    hasRespondedRef.current = false;
-    currentTrialRef.current = { letter, isTarget, startTime };
-
-    setCurrentLetter(letter);
-    setTrialCount(trialNumber);
-
-    // Ocultar estímulo tras duración
-    stimulusTimeoutRef.current = setTimeout(() => {
-      setCurrentLetter(null);
-
-      // Si no respondió a un target → omisión
-      if (!hasRespondedRef.current && currentTrialRef.current) {
-        const trial: SATrial = {
-          trialNumber,
-          letter: currentTrialRef.current.letter,
-          isTarget: currentTrialRef.current.isTarget,
+      // Si no respondió, registrar resultado
+      if (!respondioRef.current && ensayoActualRef.current) {
+        const esObj = ensayoActualRef.current.esObjetivo;
+        const ensayo = {
+          trialNumber: numero,
+          letter: ensayoActualRef.current.letra,
+          isTarget: esObj,
           responded: false,
           responseTime: null,
-          correct: !currentTrialRef.current.isTarget, // correcto si era distractor
-          errorType: currentTrialRef.current.isTarget ? 'omission' : null,
-          timestamp: startTime,
-          block,
+          correct: !esObj,
+          errorType: esObj ? 'omission' : null,
+          timestamp: inicio,
+          block: bloque
         };
-        trialsRef.current.push(trial);
-        gameState.addResult({ ...trial, stimulus: trial.letter, response: null });
-
-        if (trial.errorType === 'omission') {
-          showFeedback('miss');
-        }
+        ensayosRef.current.push(ensayo);
+        gameState.addResult({ ...ensayo, stimulus: ensayo.letter, response: null });
+        if (esObj) mostrarFeedback('miss');
       }
 
-      currentTrialRef.current = null;
+      ensayoActualRef.current = null;
+      t2.current = setTimeout(siguienteEstimulo, ENTRE_ESTIMULOS);
+    }, TIEMPO_ESTIMULO);
+  }
 
-      // Esperar ISI y pasar al siguiente
-      nextTrialTimeoutRef.current = setTimeout(() => {
-        showNextStimulus();
-      }, GAME_CONFIG.interStimulusInterval);
+  function responder() {
+    if (respondioRef.current || !ensayoActualRef.current) return;
+    respondioRef.current = true;
 
-    }, GAME_CONFIG.stimulusOnDuration);
-  }, [gameState]);
+    const rt = Date.now() - ensayoActualRef.current.inicio;
+    const { letra, esObjetivo, inicio } = ensayoActualRef.current;
+    const numero = ensayosRef.current.length + 1;
+    const bloque = Math.floor(ensayosRef.current.length / BLOQUE) + 1;
 
-  // ── Manejar respuesta del usuario ──────────────────────────────────────────
-  const handleResponse = useCallback(() => {
-    if (hasRespondedRef.current || !currentTrialRef.current) return;
-
-    hasRespondedRef.current = true;
-    const rt = Date.now() - currentTrialRef.current.startTime;
-    const { letter, isTarget } = currentTrialRef.current;
-    const trialNumber = trialsRef.current.length + 1;
-    const block = Math.floor(trialsRef.current.length / GAME_CONFIG.blockSize) + 1;
-
-    const trial: SATrial = {
-      trialNumber,
-      letter,
-      isTarget,
+    const ensayo = {
+      trialNumber: numero,
+      letter: letra,
+      isTarget: esObjetivo,
       responded: true,
       responseTime: rt,
-      correct: isTarget,
-      errorType: isTarget ? null : 'commission',
-      timestamp: currentTrialRef.current.startTime,
-      block,
+      correct: esObjetivo,
+      errorType: esObjetivo ? null : 'commission',
+      timestamp: inicio,
+      block: bloque
     };
 
-    trialsRef.current.push(trial);
-    gameState.addResult({ ...trial, stimulus: letter, response: 'press' });
+    ensayosRef.current.push(ensayo);
+    gameState.addResult({ ...ensayo, stimulus: letra, response: 'press' });
+    mostrarFeedback(esObjetivo ? 'hit' : 'false-alarm');
+  }
 
-    showFeedback(isTarget ? 'hit' : 'false-alarm');
-  }, [gameState]);
-
-  const showFeedback = (type: 'hit' | 'miss' | 'false-alarm') => {
-    setFeedbackType(type);
-    setTimeout(() => setFeedbackType(null), 350);
-  };
-
-  // ── Arrancar juego ─────────────────────────────────────────────────────────
-  const startGame = () => {
-    setGamePhase('countdown');
-    trialsRef.current = [];
+  function iniciar() {
+    ensayosRef.current = [];
     gameState.resetGame();
-    let count = 3;
+    setFase('countdown');
 
-    countdownRef.current = setInterval(() => {
-      count--;
-      setCountdown(count);
-      if (count === 0) {
-        clearInterval(countdownRef.current!);
-        setGamePhase('playing');
-        timer.startTimer(GAME_CONFIG.totalDuration);
-        setTimeout(() => showNextStimulus(), 500);
+    let c = 3;
+    tCuenta.current = setInterval(() => {
+      c--;
+      setCuenta(c);
+      if (c === 0) {
+        clearInterval(tCuenta.current);
+        setFase('playing');
+        timer.startTimer(DURACION);
+        setTimeout(siguienteEstimulo, 500);
       }
     }, 1000);
-  };
+  }
 
-  // ── Teclado ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (gamePhase === 'playing' && e.code === 'Space') {
-        e.preventDefault();
-        handleResponse();
-      }
-    };
+    const onKey = (e) => { if (fase === 'playing' && e.code === 'Space') { e.preventDefault(); responder(); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [gamePhase, handleResponse]);
+  }, [fase]);
 
-  // Limpieza al desmontar
   useEffect(() => () => {
-    if (stimulusTimeoutRef.current) clearTimeout(stimulusTimeoutRef.current);
-    if (nextTrialTimeoutRef.current) clearTimeout(nextTrialTimeoutRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
+    clearTimeout(t1.current);
+    clearTimeout(t2.current);
+    clearInterval(tCuenta.current);
   }, []);
 
-  // ── Mini progreso visual ───────────────────────────────────────────────────
-  const progress = GAME_CONFIG.totalDuration > 0
-    ? ((GAME_CONFIG.totalDuration - timer.timeLeft) / GAME_CONFIG.totalDuration) * 100
-    : 0;
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <GameContainer
-      title="Atención Sostenida"
-      instructions={null}
-      showInstructions={false}
-    >
-      {/* ── INSTRUCCIONES ── */}
-      {gamePhase === 'instructions' && (
+    <GameContainer title="Atención Sostenida" instructions={null} showInstructions={false}>
+
+      {fase === 'instructions' && (
         <div className="sa-instructions">
           <div className="sa-inst-header">
             <span className="sa-inst-icon">🔍</span>
             <h2>¿Cómo se juega?</h2>
           </div>
-
           <p className="sa-inst-desc">
             Aparecerán letras una a una en la pantalla.<br />
             <strong>Solo debes pulsar cuando veas la letra&nbsp;
-              <span className="sa-target-preview">{GAME_CONFIG.targetLetter}</span>.
+              <span className="sa-target-preview">{LETRA_OBJETIVO}</span>.
             </strong>
           </p>
-
           <div className="sa-inst-examples">
             <div className="sa-inst-ex target">
-              <div className="sa-letter-demo target">{GAME_CONFIG.targetLetter}</div>
+              <div className="sa-letter-demo target">{LETRA_OBJETIVO}</div>
               <span>← PULSA <kbd>Espacio</kbd> o haz clic</span>
             </div>
             <div className="sa-inst-ex distractor">
@@ -302,72 +224,49 @@ export const SustainedAttention: React.FC<GameProps> = ({ onGameComplete }) => {
               <span>← No hagas nada</span>
             </div>
           </div>
-
           <div className="sa-inst-meta">
-            <div className="sa-meta-item">
-              <span>⏱️</span>
-              <span>{GAME_CONFIG.totalDuration / 60} minutos</span>
-            </div>
-            <div className="sa-meta-item">
-              <span>📊</span>
-              <span>Sin puntuación visible — ¡mantén la concentración!</span>
-            </div>
+            <div className="sa-meta-item"><span>⏱️</span><span>{DURACION / 60} minutos</span></div>
+            <div className="sa-meta-item"><span>📊</span><span>Sin puntuación visible — ¡mantén la concentración!</span></div>
           </div>
-
-          <button className="sa-start-btn" onClick={startGame}>
-            Comenzar
-          </button>
+          <button className="sa-start-btn" onClick={iniciar}>Comenzar</button>
         </div>
       )}
 
-      {/* ── COUNTDOWN ── */}
-      {gamePhase === 'countdown' && (
+      {fase === 'countdown' && (
         <div className="sa-countdown">
-          <div className="sa-countdown-number">{countdown || '¡Ya!'}</div>
+          <div className="sa-countdown-number">{cuenta || '¡Ya!'}</div>
           <p>Prepárate…</p>
         </div>
       )}
 
-      {/* ── JUGANDO ── */}
-      {gamePhase === 'playing' && (
+      {fase === 'playing' && (
         <div className="sa-game">
-          {/* Barra de progreso temporal */}
           <div className="sa-progress-bar">
-            <div className="sa-progress-fill" style={{ width: `${progress}%` }} />
+            <div className="sa-progress-fill" style={{ width: `${progreso}%` }} />
           </div>
-
           <div className="sa-timer-label">
             {Math.floor(timer.timeLeft / 60)}:{String(timer.timeLeft % 60).padStart(2, '0')} restantes
           </div>
-
-          {/* Área principal del estímulo */}
-          <div
-            className={`sa-stimulus-area ${feedbackType ? `feedback-${feedbackType}` : ''}`}
-            onClick={handleResponse}
-          >
-            {currentLetter ? (
-              <div className={`sa-letter ${currentLetter === GAME_CONFIG.targetLetter ? 'is-target' : ''}`}>
-                {currentLetter}
-              </div>
-            ) : (
-              <div className="sa-fixation">+</div>
-            )}
+          <div className={`sa-stimulus-area ${feedback ? 'feedback-' + feedback : ''}`} onClick={responder}>
+            {letraActual
+              ? <div className={`sa-letter ${letraActual === LETRA_OBJETIVO ? 'is-target' : ''}`}>{letraActual}</div>
+              : <div className="sa-fixation">+</div>
+            }
           </div>
-
           <p className="sa-hint">
             Pulsa <kbd>Espacio</kbd> o haz <strong>clic</strong> solo con la&nbsp;
-            <strong className="sa-target-inline">{GAME_CONFIG.targetLetter}</strong>
+            <strong className="sa-target-inline">{LETRA_OBJETIVO}</strong>
           </p>
         </div>
       )}
 
-      {/* ── FINALIZADO ── */}
-      {gamePhase === 'finished' && (
+      {fase === 'finished' && (
         <div className="sa-finished">
           <h2>¡Prueba completada!</h2>
           <p>Procesando resultados…</p>
         </div>
       )}
+
     </GameContainer>
   );
 };
