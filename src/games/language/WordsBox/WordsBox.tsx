@@ -1,248 +1,216 @@
-import React, { useState, useCallback } from 'react';
-import { GameContainer } from '../../../shared/GameContainer';
-import { Timer } from '../../../shared/Timer';
-import { useGameState } from '../../../hooks/useGameState';
-import { useGameTimer } from '../../../hooks/useGameTimer';
-import type { GameProps, Word, WordRule, WordPool, GameResults } from '../../../types';
+import React, { useState, useEffect, useRef } from 'react';
 import './WordsBox.css';
-import { WordsBoxResultSchema } from '../../../schemas/gameSchemas';
 
-const GAME_CONFIG = {
-  totalRounds: 10,
-  timePerRound: 30,
-  wordsPerRound: 6
+const TOTAL_ROUNDS = 10;
+const TIME_PER_ROUND = 30;
+
+const PALABRAS = {
+  animales: ['perro', 'gato', 'león', 'tigre', 'oso', 'lobo', 'zorro', 'águila', 'mono', 'elefante'],
+  colores: ['rojo', 'azul', 'verde', 'amarillo', 'negro', 'blanco', 'rosa', 'morado', 'marrón', 'gris'],
+  comida: ['manzana', 'pan', 'queso', 'leche', 'patata', 'arroz', 'pasta', 'carne', 'hamburguesa', 'huevo'],
+  objetos: ['mesa', 'silla', 'libro', 'lápiz', 'papel', 'ordenador', 'teléfono', 'reloj', 'espejo', 'lámpara']
 };
 
-const WORD_POOL: WordPool = {
-  animales: ['perro', 'gato', 'león', 'tigre', 'oso', 'lobo', 'zorro', 'águila', 'mono', 'elefante', 'jirafa', 'cebra'],
-  colores: ['rojo', 'azul', 'verde', 'amarillo', 'negro', 'blanco', 'rosa', 'morado', 'naranja', 'gris', 'marrón', 'turquesa'],
-  comida: ['manzana', 'pan', 'queso', 'leche', 'patata', 'arroz', 'pasta', 'carne', 'pescado', 'huevo', 'tomate', 'lechuga'],
-  objetos: ['mesa', 'silla', 'libro', 'lápiz', 'papel', 'ordenador', 'teléfono', 'reloj', 'espejo', 'lámpara', 'puerta', 'ventana']
-};
+export const WordsBox = ({ onGameComplete }) => {
+  const [fase, setFase] = useState('instrucciones');
+  const [ronda, setRonda] = useState(0);
+  const [palabrasMostradas, setPalabrasMostradas] = useState([]);
+  const [categoriaActual, setCategoriaActual] = useState('');
+  const [seleccionadas, setSeleccionadas] = useState([]);
+  const [tiempo, setTiempo] = useState(TIME_PER_ROUND);
+  const [resultados, setResultados] = useState([]);
 
-export const WordsBox: React.FC<GameProps> = ({ onGameComplete }) => {
-  const gameState = useGameState();
-  
-  const [currentWords, setCurrentWords] = useState<Word[]>([]);
-  const [currentRule, setCurrentRule] = useState<WordRule | null>(null);
-  const [selectedWords, setSelectedWords] = useState<Word[]>([]);
-  const [gamePhase, setGamePhase] = useState<'instructions' | 'playing' | 'finished'>('instructions');
-  const [roundStartTime, setRoundStartTime] = useState<number | null>(null);
+  // Refs para que guardarResultado siempre lea valores actuales
+  const timerRef = useRef(null);
+  const rondaRef = useRef(0);
+  const palabrasRef = useRef([]);
+  const categoriaRef = useRef('');
+  const seleccionadasRef = useRef([]);
 
-  // Definir handleTimeout antes de usarlo en el hook
-  const handleTimeout = useCallback((): void => {
-    const responseTime = GAME_CONFIG.timePerRound * 1000;
-    
-    gameState.addResult({
-      correct: false,
-      responseTime,
-      response: null,
-      selectedWords: selectedWords.map(w => w.text),
-      correctWords: currentWords.filter(w => w.isTarget).map(w => w.text),
-      rule: currentRule?.category,
-      timeout: true
-    });
-    
-    if (gameState.currentRound + 1 >= GAME_CONFIG.totalRounds) {
-      finishGame();
-    } else {
-      gameState.nextRound();
-      setTimeout(() => startNewRound(), 1000);
-    }
-  }, [selectedWords, currentWords, currentRule, gameState]);
+  // Sincronizamos los refs con el estado
+  useEffect(() => { rondaRef.current = ronda; }, [ronda]);
+  useEffect(() => { palabrasRef.current = palabrasMostradas; }, [palabrasMostradas]);
+  useEffect(() => { categoriaRef.current = categoriaActual; }, [categoriaActual]);
+  useEffect(() => { seleccionadasRef.current = seleccionadas; }, [seleccionadas]);
 
-  const timer = useGameTimer(handleTimeout);
+  useEffect(() => {
+    if (fase !== 'jugando') return;
 
-  const startGame = (): void => {
-    gameState.resetGame();
-    setGamePhase('playing');
-    startNewRound();
-  };
+    timerRef.current = setInterval(() => {
+      setTiempo(t => {
+        if (t <= 1) {
+          clearInterval(timerRef.current);
+          guardarResultado(true);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
 
-  const startNewRound = (): void => {
-    const categories = Object.keys(WORD_POOL);
-    const targetCategory = categories[Math.floor(Math.random() * categories.length)];
-    
-    const targetWords = [...WORD_POOL[targetCategory]]
+    return () => clearInterval(timerRef.current);
+  }, [ronda, fase]);
+
+  const nuevaRonda = () => {
+    const categorias = Object.keys(PALABRAS);
+    const categoria = categorias[Math.floor(Math.random() * categorias.length)];
+
+    const correctas = [...PALABRAS[categoria]]
       .sort(() => Math.random() - 0.5)
       .slice(0, 3);
-    
-    const distractorWords: string[] = [];
-    const otherCategories = categories.filter(c => c !== targetCategory);
-    
-    while (distractorWords.length < 3) {
-      const randomCat = otherCategories[Math.floor(Math.random() * otherCategories.length)];
-      const randomWord = WORD_POOL[randomCat][Math.floor(Math.random() * WORD_POOL[randomCat].length)];
-      if (!distractorWords.includes(randomWord) && !targetWords.includes(randomWord)) {
-        distractorWords.push(randomWord);
+
+    const distractores = [];
+    const otrasCategorias = categorias.filter(c => c !== categoria);
+    while (distractores.length < 3) {
+      const cat = otrasCategorias[Math.floor(Math.random() * otrasCategorias.length)];
+      const palabra = PALABRAS[cat][Math.floor(Math.random() * PALABRAS[cat].length)];
+      if (!distractores.includes(palabra)) distractores.push(palabra);
+    }
+
+    const todas = [...correctas, ...distractores].sort(() => Math.random() - 0.5);
+
+    setCategoriaActual(categoria);
+    setPalabrasMostradas(todas);
+    setSeleccionadas([]);
+    setTiempo(TIME_PER_ROUND);
+  };
+
+  const empezarJuego = () => {
+    setRonda(0);
+    setResultados([]);
+    setFase('jugando');
+    nuevaRonda();
+  };
+
+  const togglePalabra = (palabra) => {
+    if (seleccionadas.includes(palabra)) {
+      setSeleccionadas(seleccionadas.filter(p => p !== palabra));
+    } else {
+      setSeleccionadas([...seleccionadas, palabra]);
+    }
+  };
+
+  const guardarResultado = (timeout = false) => {
+    clearInterval(timerRef.current);
+
+    const rondaActual = rondaRef.current;
+    const palabras = palabrasRef.current;
+    const categoria = categoriaRef.current;
+    const selecs = seleccionadasRef.current;
+
+    const correctas = palabras.filter(p => PALABRAS[categoria]?.includes(p));
+    const aciertos = selecs.filter(p => correctas.includes(p)).length;
+    const fallos = selecs.filter(p => !correctas.includes(p)).length;
+    const esCorrecta = aciertos === 3 && fallos === 0 && !timeout;
+
+    const nuevoResultado = {
+      ronda: rondaActual + 1,
+      categoria,
+      seleccionadas: selecs,
+      correctas,
+      correcto: esCorrecta,
+      timeout
+    };
+
+    setResultados(prev => {
+      const nuevosResultados = [...prev, nuevoResultado];
+
+      if (rondaActual + 1 >= TOTAL_ROUNDS) {
+        setFase('fin');
+
+        setTimeout(() => {
+          onGameComplete({
+            gameType: 'wordsbox',
+            summary: {
+              totalAnswers: nuevosResultados.length,
+              correctAnswers: nuevosResultados.filter(r => r.correcto).length,
+              accuracy: Math.round((nuevosResultados.filter(r => r.correcto).length / nuevosResultados.length) * 100),
+              averageResponseTime: 0
+            },
+            detailedResults: nuevosResultados
+          });
+        }, 0);
+
+      } else {
+        setRonda(r => r + 1);
+        setTimeout(() => nuevaRonda(), 500);
       }
-    }
-    
-    const allWords: Word[] = [...targetWords, ...distractorWords]
-      .sort(() => Math.random() - 0.5)
-      .map((word, index) => ({
-        id: `word-${index}`,
-        text: word,
-        isTarget: targetWords.includes(word)
-      }));
-    
-    setCurrentWords(allWords);
-    setCurrentRule({ category: targetCategory, targetWords });
-    setSelectedWords([]);
-    setRoundStartTime(Date.now());
-    timer.startTimer(GAME_CONFIG.timePerRound);
-  };
 
-  const handleWordClick = (word: Word): void => {
-    if (selectedWords.find(w => w.id === word.id)) {
-      setSelectedWords(selectedWords.filter(w => w.id !== word.id));
-    } else {
-      setSelectedWords([...selectedWords, word]);
-    }
-  };
-
-  const submitAnswer = (): void => {
-    const responseTime = Date.now() - (roundStartTime || Date.now());
-    const correctSelections = selectedWords.filter(w => w.isTarget).length;
-    const totalTargets = currentWords.filter(w => w.isTarget).length;
-    const incorrectSelections = selectedWords.filter(w => !w.isTarget).length;
-    
-    const isCorrect = correctSelections === totalTargets && incorrectSelections === 0;
-    
-    gameState.addResult({
-      correct: isCorrect,
-      responseTime,
-      response: null,
-      selectedWords: selectedWords.map(w => w.text),
-      correctWords: currentWords.filter(w => w.isTarget).map(w => w.text),
-      rule: currentRule?.category,
-      correctSelections,
-      totalTargets,
-      incorrectSelections
+      return nuevosResultados;
     });
-    
-    timer.stopTimer();
-    
-    if (gameState.currentRound + 1 >= GAME_CONFIG.totalRounds) {
-      finishGame();
-    } else {
-      gameState.nextRound();
-      setTimeout(() => startNewRound(), 1000);
-    }
   };
 
-  const finishGame = (): void => {
-  gameState.finishGame();
-  setGamePhase('finished');
-  timer.stopTimer();
-  
-  const avgResponseTime = gameState.results.reduce((acc, r) => acc + (r.responseTime || 0), 0) / gameState.results.length || 0;
-  
-  // 1. Preparamos el objeto como siempre
-  const rawResults = {
-    gameType: 'wordsbox',
-    summary: {
-      totalAnswers: gameState.results.length,
-      correctAnswers: gameState.getCorrectAnswers(),
-      accuracy: gameState.getAccuracy(),
-      averageResponseTime: avgResponseTime
-    },
-    detailedResults: gameState.results
-  };
+  // ── RENDER ──────────────────────────────────────────────────────────────────
 
-  // 2. VALIDAMOS con Zod
-  const validation = WordsBoxResultSchema.safeParse(rawResults);
-
-  if (validation.success) {
-    // Si es válido, enviamos los datos limpios (validation.data)
-    onGameComplete(validation.data);
-  } else {
-    // Si falla, puedes ver qué campo dio error en la consola
-    console.error("Error de validación en los resultados:", validation.error.format());
-    
-    // Opcional: Manejar el error (ej: enviar un log de error a tu servidor)
-    // onGameComplete(rawResults); // Podrías enviarlos igual, pero ya sabes que están mal
+  if (fase === 'instrucciones') {
+    return (
+      <div className="wordsbox-start">
+        <h2>WordsBox</h2>
+        <p>Selecciona las palabras que pertenezcan a la categoría indicada.</p>
+        <div className="game-info">
+          <div className="info-card">
+            <span className="info-icon">🎯</span>
+            <span className="info-label">Total de rondas</span>
+            <span className="info-value">{TOTAL_ROUNDS}</span>
+          </div>
+          <div className="info-card">
+            <span className="info-icon">⏱️</span>
+            <span className="info-label">Tiempo por ronda</span>
+            <span className="info-value">{TIME_PER_ROUND}s</span>
+          </div>
+        </div>
+        <button className="start-game-button" onClick={empezarJuego}>
+          Comenzar Juego
+        </button>
+      </div>
+    );
   }
-};
+
+  if (fase === 'fin') {
+    return (
+      <div className="wordsbox-finished">
+        <h2>¡Juego completado!</h2>
+        <p>Procesando resultados...</p>
+      </div>
+    );
+  }
 
   return (
-    <GameContainer
-      title="WordsBox"
-      instructions={gamePhase === 'instructions' 
-        ? "Selecciona todas las palabras que pertenezcan a la categoría indicada. Tienes 30 segundos por ronda."
-        : null}
-      showInstructions={gamePhase === 'instructions'}
-    >
-      {gamePhase === 'instructions' && (
-        <div className="wordsbox-start">
-          <div className="game-info">
-            <div className="info-card">
-              <span className="info-icon">🎯</span>
-              <span className="info-label">Total de rondas</span>
-              <span className="info-value">{GAME_CONFIG.totalRounds}</span>
-            </div>
-            <div className="info-card">
-              <span className="info-icon">⏱️</span>
-              <span className="info-label">Tiempo por ronda</span>
-              <span className="info-value">{GAME_CONFIG.timePerRound}s</span>
-            </div>
-          </div>
-          <button className="start-game-button" onClick={startGame}>
-            Comenzar Juego
+    <div className="wordsbox-game">
+      <div className="game-header-bar">
+        <div className="round-indicator">
+          Ronda {ronda + 1} / {TOTAL_ROUNDS}
+        </div>
+        <div className="round-indicator">
+          ⏱ {tiempo}s
+        </div>
+      </div>
+
+      <div className="rule-display">
+        <span className="rule-label">Selecciona:</span>
+        <span className="rule-category">{categoriaActual}</span>
+      </div>
+
+      <div className="words-grid">
+        {palabrasMostradas.map((palabra, i) => (
+          <button
+            key={i}
+            className={`word-card ${seleccionadas.includes(palabra) ? 'selected' : ''}`}
+            onClick={() => togglePalabra(palabra)}
+          >
+            <span>{palabra}</span>
           </button>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {gamePhase === 'playing' && (
-        <div className="wordsbox-game">
-          <div className="game-header-bar">
-            <div className="round-indicator">
-              Ronda {gameState.currentRound + 1} / {GAME_CONFIG.totalRounds}
-            </div>
-            <Timer 
-              timeLeft={timer.timeLeft} 
-              total={timer.totalTime}
-              label="Tiempo restante"
-            />
-          </div>
-
-          <div className="rule-display">
-            <span className="rule-label">Selecciona:</span>
-            <span className="rule-category">{currentRule?.category}</span>
-          </div>
-
-          <div className="words-grid">
-            {currentWords.map(word => (
-              <button
-                key={word.id}
-                className={`word-card ${selectedWords.find(w => w.id === word.id) ? 'selected' : ''}`}
-                onClick={() => handleWordClick(word)}
-              >
-                {word.text}
-              </button>
-            ))}
-          </div>
-
-          <div className="game-controls">
-            <button 
-              className="submit-button"
-              onClick={submitAnswer}
-              disabled={selectedWords.length === 0}
-            >
-              Enviar ({selectedWords.length} seleccionadas)
-            </button>
-          </div>
-        </div>
-      )}
-
-      {gamePhase === 'finished' && (
-        <div className="wordsbox-finished">
-          <div className="finished-message">
-            <h2>¡Juego completado!</h2>
-            <p>Procesando resultados...</p>
-          </div>
-        </div>
-      )}
-    </GameContainer>
+      <div className="game-controls">
+        <button
+          className="submit-button"
+          onClick={() => guardarResultado()}
+          disabled={seleccionadas.length === 0}
+        >
+          Enviar ({seleccionadas.length} seleccionadas)
+        </button>
+      </div>
+    </div>
   );
 };
